@@ -1,41 +1,22 @@
-# Ruby CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-ruby/ for more details
-#
 version: 2
 jobs:
-  build:
+  setup:
     docker:
-      # specify the version you desire here
       - image: circleci/ruby:2.6.3-node
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      - image: circleci/postgres:9.6.9-alpine
-
-    working_directory: ~/repo
-
     steps:
       - checkout
 
       - run: gem update --system
       - run: gem install bundler
 
-      # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "Gemfile.lock" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-      - run:
-          name: install dependencies
-          command: |
-            bundle install --jobs=4 --retry=3 --path vendor/bundle
+            - bundle-{{ checksum "Gemfile.lock" }}
+      - run: bundle install --path vendor/bundle
       - save_cache:
+          key: bundle-{{ checksum "Gemfile.lock" }}
           paths:
-            - ./vendor/bundle
-          key: v1-dependencies-{{ checksum "Gemfile.lock" }}
+            - vendor/bundle
 
       - restore_cache:
           keys:
@@ -51,29 +32,63 @@ jobs:
           key: webpack-{{ .Revision }}
           paths:
             - /home/circleci/project/public/packs-test/
-
-      # Database setup
+  test:
+    docker:
+      - image: circleci/ruby:2.6.3-node
+        environment:
+          DATABASE_URL: postgresql://postgres:secret@localhost:5432
+          REDIS_URL: redis://redis@localhost:6379
+      - image: circleci/postgres:11
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: smart_farmer_test
+          POSTGRES_PASSWORD: secret
+      - image: circleci/redis:latest
+    parallelism: 1
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - webpack-{{ .Revision }}
+      - restore_cache:
+          keys:
+            - bundle-{{ checksum "Gemfile.lock" }}
+      - run: gem update --system
+      - run: gem install bundler
+      - run: bundle install --path vendor/bundle
+      - run: sudo apt install postgresql-client
+      - run: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: bundle exec rake db:create
       - run: bundle exec rake db:schema:load
-
-      # run tests!
       - run:
-          name: run tests
+          name: Additional checks
           command: |
-            mkdir /tmp/test-results
-            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | \
-              circleci tests split --split-by=timings)"
-
-            bundle exec rspec \
-              --format progress \
-              --format RspecJunitFormatter \
-              --out /tmp/test-results/rspec.xml \
-              --format progress \
-              $TEST_FILES
-
-      # collect reports
+              if [ $CIRCLE_NODE_INDEX = 0 ]; then
+                bundle exec bundle-audit update
+                bundle exec bundle-audit check
+              elif [ $CIRCLE_NODE_INDEX = 1 ]; then
+                bin/rubocop
+              fi
+      - run:
+          name: Specs
+          command: |
+            TESTFILES=$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)
+            bundle exec rspec $TESTFILES --profile 10 --format RspecJunitFormatter --out ~/spec-timings/rspec.xml --format progress
       - store_test_results:
-          path: /tmp/test-results
-      - store_artifacts:
-          path: /tmp/test-results
-          destination: test-results
+          path: ~/spec-timings
+
+workflows:
+  version: 2
+  setup_and_test:
+    jobs:
+      - setup
+      - test:
+          requires:
+            - setup
+            workflows:
+      - deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master
