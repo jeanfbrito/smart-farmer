@@ -10,6 +10,10 @@ RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources
 # Install Rails dependencies for the OS
 RUN apt-get update && apt-get install -y libpq-dev postgresql-client nodejs yarn --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
+ENV BUNDLE_PATH /bundler_cache
+ENV GEM_PATH /bundler_cache
+ENV GEM_HOME /bundler_cache
+
 # Set the work directory inside container
 RUN mkdir /app
 WORKDIR /app

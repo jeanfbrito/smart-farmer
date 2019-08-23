@@ -18,6 +18,7 @@ services:
     command: ruby bin/rails s -p 80 -b '0.0.0.0'
     volumes:
       - .:/app
+      - bundler_cache:/bundler_cache
     links:
       - postgres
     ports:
@@ -29,3 +30,4 @@ services:
 
 volumes:
   postgres:
+  bundler_cache:
