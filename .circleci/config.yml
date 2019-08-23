@@ -85,10 +85,3 @@ workflows:
       - test:
           requires:
             - setup
-            workflows:
-      - deploy:
-          requires:
-            - test
-          filters:
-            branches:
-              only: master
