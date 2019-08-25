@@ -36,13 +36,14 @@ jobs:
     docker:
       - image: circleci/ruby:2.6.3-node
         environment:
-          DATABASE_URL: localhost
-          #REDIS_URL: redis://redis@localhost:6379
-      - image: circleci/postgres:10.4-alpine
+          DATABASE_URL: postgresql://postgres:secret@localhost:5432
+          REDIS_URL: redis://redis@localhost:6379
+      - image: circleci/postgres:11
         environment:
           POSTGRES_USER: postgres
+          POSTGRES_DB: smart_farmer_test
           POSTGRES_PASSWORD: secret
-      #- image: circleci/redis:latest
+      - image: circleci/redis:latest
     parallelism: 1
     steps:
       - checkout
@@ -60,7 +61,7 @@ jobs:
       - run: bundle exec rake db:create
       - run: bundle exec rake db:schema:load
       - run:
-          name: Additional checks
+          name: Security checks
           command: |
               if [ $CIRCLE_NODE_INDEX = 0 ]; then
                 bundle exec bundle-audit update
@@ -75,7 +76,6 @@ jobs:
             bundle exec rspec $TESTFILES --profile 10 --format RspecJunitFormatter --out ~/spec-timings/rspec.xml --format progress
       - store_test_results:
           path: ~/spec-timings
-
 workflows:
   version: 2
   setup_and_test:
