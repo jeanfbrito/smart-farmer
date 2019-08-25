@@ -35,15 +35,15 @@ jobs:
   test:
     docker:
       - image: circleci/ruby:2.6.3-node
-        environment:
-          DATABASE_URL: postgresql://postgres:secret@localhost:5432
-          REDIS_URL: redis://redis@localhost:6379
+        #environment:
+          #DATABASE_URL: postgresql://postgres:secret@localhost:5432
+          #REDIS_URL: redis://redis@localhost:6379
       - image: circleci/postgres:11
         environment:
           POSTGRES_USER: postgres
-          POSTGRES_DB: smart_farmer_test
           POSTGRES_PASSWORD: secret
-      - image: circleci/redis:latest
+          DATABASE_URL: postgres
+      #- image: circleci/redis:latest
     parallelism: 1
     steps:
       - checkout
