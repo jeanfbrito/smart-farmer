@@ -55,7 +55,7 @@ jobs:
               if [ $CIRCLE_NODE_INDEX = 0 ]; then
                 bundle exec bundler-audit update
                 bundle exec bundler-audit check
-                bin/rubocop
+                bundle exec rubocop
               fi
       - run:
           name: Specs
