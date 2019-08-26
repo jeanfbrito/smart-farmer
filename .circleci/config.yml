@@ -47,16 +47,7 @@ jobs:
           key: webpack-{{ .Revision }}
           paths:
             - /home/circleci/project/public/packs-test/
-  test:
-    <<: *defaults
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - webpack-{{ .Revision }}
-      - restore_cache:
-          keys:
-            - bundle-{{ checksum "Gemfile.lock" }}
+
       - run: gem update --system
       - run: gem install bundler
       - run: bundle install --path vendor/bundle
@@ -85,6 +76,3 @@ workflows:
   setup_and_test:
     jobs:
       - setup
-      - test:
-          requires:
-            - setup
