@@ -15,7 +15,6 @@ defaults: &defaults
         environment:
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: secret
-        POSTGRES_DB: smart_farmer_test
 
 jobs:
   setup:
