@@ -1,82 +1,88 @@
-# Ruby CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-ruby/ for more details
-#
 version: 2
+
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/ruby:2.6.3-node
+      environment:
+        BUNDLE_JOBS: 4
+        BUNDLE_RETRY: 3
+        BUNDLE_PATH: vendor/bundle
+        DATABASE_URL: "postgresql://root@localhost/smart_farmer_test?pool=5"
+
+    - image: circleci/postgres:9.3-alpine-ram
+      environment:
+        POSTGRES_USER: root
+        POSTGRES_DB: smart_farmer_test
+
 jobs:
-  test:
-    docker:
-      # specify the version you desire here
-       - image: circleci/ruby:2.6.3
-         environment:
-           PGHOST: 127.0.0.1
-           PGUSER: root
-           RAILS_ENV: test
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-       - image: circleci/postgres:9.6.4
-
-    working_directory: ~/repo
-
+  setup:
     steps:
       - checkout
 
-      # Download and cache dependencies
+      - run: gem update --system
+      - run: gem install bundler
+
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "Gemfile.lock" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
-      - run:
-          name: install dependencies
-          command: |
-            bundle install --jobs=4 --retry=3 --path vendor/bundle
-            sudo apt update
-            sudo apt install postgresql-client
-
+            - bundle-{{ checksum "Gemfile.lock" }}
+      - run: bundle install --path vendor/bundle
       - save_cache:
+          key: bundle-{{ checksum "Gemfile.lock" }}
           paths:
-            - ./vendor/bundle
-          key: v1-dependencies-{{ checksum "Gemfile.lock" }}
+            - vendor/bundle
 
-      # Run Rubocop
-      - run:
-          name: Run rubocop
-          command: bin/rubocop
+      - restore_cache:
+          keys:
+            - yarn-{{ checksum "yarn.lock" }}
+      - run: yarn install --cache-folder ~/.cache/yarn
+      - save_cache:
+          key: yarn-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn
 
-      # Database setup
+      - run: bundle exec rake webpacker:compile
+      - save_cache:
+          key: webpack-{{ .Revision }}
+          paths:
+            - /home/circleci/project/public/packs-test/
+  test:
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - webpack-{{ .Revision }}
+      - restore_cache:
+          keys:
+            - bundle-{{ checksum "Gemfile.lock" }}
+      - run: gem update --system
+      - run: gem install bundler
+      - run: bundle install --path vendor/bundle
+      - run: sudo apt install postgresql-client
+      - run: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: bundle exec rake db:create
       - run: bundle exec rake db:schema:load
-
-      # Setup coverage report
       - run:
-          name: Setup Code Climate test-reporter
+          name: Security checks
           command: |
-            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-            chmod +x ./cc-test-reporter
-
-      # run tests!
+              if [ $CIRCLE_NODE_INDEX = 0 ]; then
+                bundle exec bundle-audit update
+                bundle exec bundle-audit check
+              elif [ $CIRCLE_NODE_INDEX = 1 ]; then
+                bin/rubocop
+              fi
       - run:
-          name: Run tests
+          name: Specs
           command: |
-            mkdir /tmp/test-results
-            ./cc-test-reporter before-build
-            bundle exec rspec --format progress \
-                            --format RspecJunitFormatter \
-                            --out /tmp/test-results/rspec.xml \
-                            --format progress
-            ./cc-test-reporter after-build --coverage-input-type simplecov --exit-code $?
-
-      # collect reports
+            TESTFILES=$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)
+            bundle exec rspec $TESTFILES --profile 10 --format RspecJunitFormatter --out ~/spec-timings/rspec.xml --format progress
       - store_test_results:
-          path: /tmp/test-results
-      - store_artifacts:
-          path: /tmp/test-results
-          destination: test-results
+          path: ~/spec-timings
 workflows:
   version: 2
-  test_and_deploy:
+  setup_and_test:
     jobs:
+      - setup
       - test:
+          requires:
+            - setup
