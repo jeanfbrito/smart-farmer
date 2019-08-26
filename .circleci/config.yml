@@ -48,6 +48,7 @@ jobs:
           paths:
             - /home/circleci/project/public/packs-test/
   test:
+    <<: *defaults
     steps:
       - checkout
       - restore_cache:
