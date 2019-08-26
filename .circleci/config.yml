@@ -52,9 +52,8 @@ jobs:
           name: Security checks
           command: |
               if [ $CIRCLE_NODE_INDEX = 0 ]; then
-                bundle exec bundle-audit update
-                bundle exec bundle-audit check
-              elif [ $CIRCLE_NODE_INDEX = 1 ]; then
+                bundle exec bundler-audit update
+                bundle exec bundler-audit check
                 bin/rubocop
               fi
       - run:
