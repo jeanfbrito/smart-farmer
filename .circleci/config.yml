@@ -9,7 +9,7 @@ defaults: &defaults
         PGUSER: root
         RAILS_ENV: test
 
-    - image: circleci/postgres:11
+    - image: circleci/postgres:10.4
 
 jobs:
   setup:
