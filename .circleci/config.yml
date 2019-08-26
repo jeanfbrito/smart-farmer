@@ -75,58 +75,11 @@ jobs:
       - store_artifacts:
           path: /tmp/test-results
           destination: test-results
-  deploy_staging:
-    docker:
-      - image: circleci/ruby:2.6.3
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            gem install dpl
-      - run:
-          name: Deploy to staging
-          command: |
-            dpl --provider=heroku --app=materiamundi-staging --api-key=$HEROKU_API_KEY
-  deploy_production:
-    docker:
-      - image: circleci/ruby:2.6.3
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            gem install dpl
-      - run:
-          name: Deploy to production
-          command: |
-            dpl --provider=heroku --app=materiamundi-production --api-key=$HEROKU_API_KEY
 workflows:
   version: 2
   test_and_deploy:
     jobs:
       - test:
-          context: org-global
-          filters:
-            tags:
-              ignore: /.*/
-
-      - deploy_staging:
-          context: org-global
-          filters:
-            branches:
-              only: master
-            tags:
-              ignore: /.*/
-          requires:
-            - test
-
-      - deploy_production:
-          context: org-global
-          filters:
-            tags:
-              only: /v[0-9]+/
-            branches:
-              ignore: /.*/
+        filters:
+          tags:
+            ignore: /.*/
