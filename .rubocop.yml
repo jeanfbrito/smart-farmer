@@ -1,0 +1,115 @@
+require:
+  - rubocop-performance
+  - rubocop-rails
+
+Documentation:
+  Enabled: false
+
+Lint/AmbiguousBlockAssociation:
+  Enabled: false
+
+Naming/MemoizedInstanceVariableName:
+  Enabled: false
+
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+
+Metrics/LineLength:
+  Max: 120
+
+Metrics/AbcSize:
+  Max: 18
+
+Metrics/ClassLength:
+  Max: 150
+
+Metrics/MethodLength:
+  Max: 12
+
+Metrics/ModuleLength:
+  Max: 150
+
+Metrics/BlockLength:
+  ExcludedMethods:
+    - 'describe'
+    - 'context'
+    - 'it'
+    - 'factory'
+    - 'shared_context'
+    - 'shared_examples'
+    - 'let'
+    - 'define'
+
+Layout/AlignHash:
+  Enabled: false
+Layout/AlignParameters:
+  EnforcedStyle: with_fixed_indentation
+Layout/AlignArguments:
+  EnforcedStyle: with_fixed_indentation
+
+# Just indent the next lines 2 spaces
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+Layout/MultilineOperationIndentation:
+  EnforcedStyle: indented
+
+# We want to have spaces when the interpolation is more complex
+Layout/SpaceInsideStringInterpolation:
+  Enabled: false
+
+Layout/EmptyLinesAroundBlockBody:
+  Exclude: # allow RSPEC blocks to have empty lines
+    - 'spec/**/*_spec.rb'
+    - 'spec/support/**/*'
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
+Layout/EmptyLinesAroundModuleBody:
+  Enabled: false
+
+Lint/UnneededCopDisableDirective:
+  Enabled: false
+
+Style/Lambda:
+  EnforcedStyle: literal
+
+Style/SymbolArray:
+  EnforcedStyle: brackets
+
+Style/MixinUsage:
+  Exclude:
+    - 'spec/factories/**/*'
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Rails:
+  Enabled: true
+
+Rails/SkipsModelValidations:
+  Enabled: false
+
+Rails/HasAndBelongsToMany:
+  Enabled: false
+
+AllCops:
+  TargetRubyVersion: 2.4
+  Exclude:
+    - 'bin/**/*'
+    - 'config/**/*'
+    - 'coverage/**/*'
+    - 'db/**/*'
+    - 'lib/**/*'
+    - 'log/**/*'
+    - 'public/**/*'
+    - 'tmp/**/*'
+    - 'vendor/**/*'
+    - 'spec/spec_helper.rb'
+    - 'node_modules/**/*'
+    - 'Gemfile'
+    - !ruby/regexp /old_and_unused\.rb$/
+
+
+# The following cops are added between 0.55.0 and 0.57.2.
+# The configurations are default.
+# If you want to use a cop by default, remove a configuration for the cop from here.
+# If you want to disable a cop, change `Enabled` to false.
