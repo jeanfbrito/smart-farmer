@@ -19,6 +19,7 @@ jobs:
 
       - run: gem update --system
       - run: gem install bundler
+      - run: gem install rubocop
 
       - restore_cache:
           keys:
